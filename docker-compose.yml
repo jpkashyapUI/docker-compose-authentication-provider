@@ -2,44 +2,31 @@ version: '3.8'
 
 services:
 
-  mysql_oauth_server:
+  mysql_oauth_server_client:
     image: mysql:latest
-    container_name: mysql_oauth_server
+    container_name: mysql_oauth_server_client
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: oauth
 
-    ports: 
+    ports:
       - "3307:3306"
     volumes:
       - mysql_data_server:/var/lib/mysql
+      - ./scripts:/docker-entrypoint-initdb.d
 
-  
-  mysql_oauth_client:
-    image: mysql:latest
-    container_name: mysql_oauth_client
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: social
-
-    ports:
-      - "3308:3306"
-    volumes:
-      - mysql_data_client:/var/lib/mysql
-
-  
   oauth_client:
     container_name: node_client
-    build: 
-      context: ./client
+    build:
+      # context: ./client
+      context: https://github.com/jpkashyapUI/nodeOAuthClientServer.git#main:client
     ports:
       - "3000:3000"
       - "9229:9229"
-    command: node --inspect=0.0.0.0:9229 app.js
-    volumes:
-      - ./client:/app
+    command: node --inspect=0.0.0.0:9229 --nolazy app.js
+    # volumes:
+    #   - ./client:/app
     depends_on:
-      - mysql_oauth_client
+      - mysql_oauth_server_client
     environment:
       DB_HOST: host.docker.internal
       DB_PORT: 3306
@@ -49,14 +36,17 @@ services:
 
   oauth_server:
     container_name: node_server
-    build: 
-      context: ./server
+    build:
+      # context: ./server
+      context: https://github.com/jpkashyapUI/nodeOAuthClientServer.git#main:server
     ports:
       - "5000:5000"
-    volumes:
-      - ./server:/app
+      - "9230:9229"
+    command: node --inspect=0.0.0.0:9229 --nolazy app.js
+    # volumes:
+    #   - ./server:/app
     depends_on:
-      - mysql_oauth_server
+      - mysql_oauth_server_client
     environment:
       DB_HOST: host.docker.internal
       DB_PORT: 3306
@@ -66,7 +56,5 @@ services:
 
 volumes:
   mysql_data_server:
-  mysql_data_client:
 
 
-    
